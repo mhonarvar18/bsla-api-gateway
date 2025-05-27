@@ -1,9 +1,25 @@
 import { Module } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { MessageController } from './message.controller';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ConfigModule } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 
 @Module({
-  providers: [MessageService],
-  controllers: [MessageController]
+  imports: [
+    ClientsModule.register([
+      {
+        name: 'MESSAGE_SERVICE',
+        transport: Transport.TCP,
+        options: {
+          host: process.env.MESSAGE_SERVICE_HOST || 'localhost',
+          port: parseInt(process.env.MESSAGE_SERVICE_PORT) || 3002,
+        },
+      },
+    ]),
+    ConfigModule
+  ],
+  providers: [MessageService, JwtAuthGuard],
+  controllers: [MessageController],
 })
-export class MessageModule {}
+export class MessageModule { }

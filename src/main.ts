@@ -6,10 +6,24 @@ const chalk = require('chalk');
 import { server } from './config/server.config';
 import { ResponseInterceptor } from './shared/response.interceptor';
 import { RpcExceptionFilter } from './shared/rpc-exception.filter';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  app.useGlobalPipes(
+    new ValidationPipe({
+      forbidUnknownValues: true,
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      disableErrorMessages: false,
+    }),
+  );
+
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), { prefix: '/uploads/' })
   app.setGlobalPrefix('api/v1');
   app.enableCors();
 

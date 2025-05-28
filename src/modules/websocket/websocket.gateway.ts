@@ -17,17 +17,23 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   @WebSocketServer()
   server: Server;
 
-  // userId to socket mapping
   private users = new Map<number, string>();
+  private redisSubscriber: RedisClientType;
+  private redisPublisher: RedisClientType;
 
-  private redisSubscriber: RedisClientType
   async afterInit(server: any) {
-    this.redisSubscriber = createClient();
+    // اتصال پایدار Redis (subscriber)
+    this.redisSubscriber = createClient({ url: process.env.REDIS_URL });
     await this.redisSubscriber.connect();
 
+    // اتصال پایدار Redis (publisher)
+    this.redisPublisher = createClient({ url: process.env.REDIS_URL });
+    await this.redisPublisher.connect();
+
+    // Subscription برای دریافت پیام‌ها
     await this.redisSubscriber.subscribe('message.sent', (messageStr) => {
       const message = JSON.parse(messageStr);
-      this.server.to(`user-${message.receiverId}`).emit('newMessage', message)
+      this.server.to(`user-${message.receiverId}`).emit('newMessage', message);
     });
 
     await this.redisSubscriber.subscribe('message.read', (messageStr) => {
@@ -39,23 +45,19 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     });
   }
 
-
   handleConnection(client: Socket) {
     try {
-      const token = client.handshake.auth.token?.replace('Bearer', '');
-      if (!token) {
-        client.disconnect();
-        return;
-      }
+      const token = client.handshake.auth.token?.replace('Bearer', '').trim();
+      if (!token) return client.disconnect();
 
       const payload: any = jwt.verify(token, process.env.JWT_SECRET);
       const userId = payload.userId;
       client.join(`user-${userId}`);
       (client as any).userId = userId;
-      console.log(`User ${userId} connected`);
-
+      this.users.set(userId, client.id);
+      console.log(`✅ User ${userId} connected`);
     } catch (error) {
-      console.error('invalid token:', error.message);
+      console.error('❌ Invalid token:', error.message);
       client.disconnect();
     }
   }
@@ -69,28 +71,23 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @SubscribeMessage('ping')
-  handlePing(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
+  handlePing(@ConnectedSocket() client: Socket) {
     client.emit('pong', { message: 'pong' });
   }
 
   @SubscribeMessage('message.read')
   async handleMessageRead(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { messageId: number, senderId: number }
+    @MessageBody() data: { messageId: number; senderId: number }
   ) {
-    const redisPublisher = createClient();
-    await redisPublisher.connect();
-
     const payload = {
       messageId: data.messageId,
       senderId: data.senderId,
       readerId: (client as any).userId,
     };
 
-    await redisPublisher.publish('message.read', JSON.stringify(payload));
-    await redisPublisher.disconnect();
+    await this.redisPublisher.publish('message.read', JSON.stringify(payload));
   }
-
 
   sendMessageToUser(userId: number, message: any) {
     const socketId = this.users.get(userId);

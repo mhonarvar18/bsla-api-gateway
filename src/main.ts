@@ -46,7 +46,7 @@ async function bootstrap() {
 bootstrap().then(() => {
   console.log(
     chalk.whiteBright.italic.bold(
-      `${chalk.bgGray(chalk.bgGreenBright.black.italic.bold('  AuthService is running on: '))} ${server.ip
+      `${chalk.bgGray(chalk.bgGreenBright.black.italic.bold('  Api Gateway is running on: '))} ${server.ip
       }:${server.port} => ${chalk.magenta(server.url)}\n`,
     ),
   );

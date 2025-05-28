@@ -8,7 +8,7 @@ import { WebsocketGateway } from './modules/websocket/websocket.gateway';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ClientsModule.register([
       {
         name: 'AUTH_SERVICE',

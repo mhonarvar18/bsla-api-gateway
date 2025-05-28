@@ -4,6 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AuthModule } from './modules/auth/auth.module';
 import { MessageModule } from './modules/message/message.module';
 import { AuthMiddleware } from './middleware/auth.middleware';
+import { WebsocketGateway } from './modules/websocket/websocket.gateway';
 
 @Module({
   imports: [

@@ -4,6 +4,8 @@ import { MessageController } from './message.controller';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ConfigModule } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
+import { WebsocketModule } from '../websocket/websocket.module';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
   imports: [
@@ -17,7 +19,9 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
         },
       },
     ]),
-    ConfigModule
+    ConfigModule,
+    WebsocketModule,
+    RedisModule,
   ],
   providers: [MessageService, JwtAuthGuard],
   controllers: [MessageController],

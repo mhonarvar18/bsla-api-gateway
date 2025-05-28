@@ -1,10 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import { lastValueFrom } from 'rxjs';
+import { WebsocketGateway } from '../websocket/websocket.gateway';
 
 @Injectable()
 export class MessageService {
-  constructor(@Inject('MESSAGE_SERVICE') private readonly client: ClientProxy) { }
+  constructor(
+    @Inject('MESSAGE_SERVICE') private readonly client: ClientProxy,
+    private readonly websocketGateway: WebsocketGateway,
+  ) { }
 
   sendMessage(data: any) {
     return lastValueFrom(this.client.send('send-message', data));
